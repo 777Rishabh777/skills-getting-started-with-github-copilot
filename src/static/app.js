@@ -20,14 +20,49 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const spotsLeft = details.max_participants - details.participants.length;
 
+        const participantsHTML = details.participants.length > 0
+          ? `<ul class="participants-list">${details.participants.map(p => `
+              <li class="participant-item">
+                <span class="participant-email">${p}</span>
+                <button class="unregister-btn" data-activity="${name}" data-email="${p}" title="Unregister">🗑</button>
+              </li>`).join('')}
+            </ul>`
+          : `<p class="no-participants">No participants yet.</p>`;
+
         activityCard.innerHTML = `
           <h4>${name}</h4>
           <p>${details.description}</p>
           <p><strong>Schedule:</strong> ${details.schedule}</p>
           <p><strong>Availability:</strong> ${spotsLeft} spots left</p>
+          <div class="participants-section">
+            <strong>Participants:</strong>
+            ${participantsHTML}
+          </div>
         `;
 
         activitiesList.appendChild(activityCard);
+
+        // Attach unregister handlers
+        activityCard.querySelectorAll(".unregister-btn").forEach(btn => {
+          btn.addEventListener("click", async () => {
+            const actName = btn.dataset.activity;
+            const email = btn.dataset.email;
+            try {
+              const res = await fetch(
+                `/activities/${encodeURIComponent(actName)}/unregister?email=${encodeURIComponent(email)}`,
+                { method: "DELETE" }
+              );
+              if (res.ok) {
+                fetchActivities();
+              } else {
+                const err = await res.json();
+                alert(err.detail || "Failed to unregister.");
+              }
+            } catch (e) {
+              alert("Failed to unregister.");
+            }
+          });
+        });
 
         // Add option to select dropdown
         const option = document.createElement("option");
